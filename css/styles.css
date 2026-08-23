@@ -218,28 +218,12 @@ input[type="text"]:focus, input[type="date"]:focus, button:focus-visible {
   margin: 0 0 14px;
 }
 
-.date-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.date-field label {
-  display: block;
-  font-size: 12.5px;
+/* ---------- Calendar hint text ---------- */
+.calendar-hint {
+  font-size: 12px;
   color: var(--text-muted);
-  margin-bottom: 6px;
-  font-weight: 600;
-}
-input[type="date"] {
-  font-family: inherit;
-  font-size: 15px;
-  padding: 12px 10px;
-  border-radius: var(--radius-s);
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-  color: var(--text);
-  width: 100%;
+  text-align: center;
+  margin: 12px 0 0;
 }
 
 .color-select {
@@ -292,6 +276,62 @@ input[type="date"] {
   font-size: 13px;
   margin: -6px 0 14px;
   min-height: 0;
+}
+
+/* ---------- Confirm bar (calendar-driven date entry) ---------- */
+.confirm-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.14);
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: 480px;
+  margin: 0 auto;
+  transform: translateY(0);
+  transition: transform .22s ease;
+}
+.confirm-bar.hidden {
+  transform: translateY(110%);
+  display: block !important; /* keep it in flow so the slide-out is visible; pointer-events off below */
+  pointer-events: none;
+}
+.confirm-bar-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.confirm-bar-label {
+  font-weight: 650;
+  font-size: 15px;
+}
+.confirm-bar-error {
+  color: var(--danger);
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+.confirm-bar-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 150px;
+  justify-content: flex-end;
+}
+.confirm-bar-swatches .swatch {
+  width: 24px;
+  height: 24px;
+}
+.confirm-bar-actions {
+  display: flex;
+  gap: 10px;
+}
+.confirm-bar-actions .btn {
+  flex: 1;
 }
 
 /* ---------- Calendar ---------- */
@@ -368,6 +408,31 @@ input[type="date"] {
 .day-cell.today.logged .num {
   box-shadow: 0 0 0 2px var(--text);
 }
+.day-cell.unselectable {
+  cursor: default;
+}
+.day-cell.unselectable .num {
+  color: var(--border);
+}
+.day-cell.range-start .num,
+.day-cell.range-end .num {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.day-cell.in-range .num {
+  background: var(--accent-soft);
+  border-radius: 10px;
+  font-weight: 600;
+}
+.day-cell.range-start .num { border-radius: var(--radius-pebble); }
+.day-cell.range-end .num { border-radius: var(--radius-pebble); }
+
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.nav-btn:disabled:active { background: var(--surface); }
 
 /* ---------- History ---------- */
 .history-empty {

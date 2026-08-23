@@ -1,6 +1,6 @@
 // Track it — service worker
 // Bump CACHE_VERSION on every release. Old caches are removed on activate.
-const CACHE_VERSION = 'trackit-v2';
+const CACHE_VERSION = 'trackit-v3';
 const APP_SHELL = [
   './',
   './index.html',

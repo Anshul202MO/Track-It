@@ -64,37 +64,7 @@
       <span id="reminder-banner-text"></span>
     </div>
 
-    <!-- Add your dates -->
-    <div class="card">
-      <div class="section-title">Add your dates</div>
-
-      <div id="editing-banner" class="editing-banner hidden">
-        <span id="editing-banner-text"></span>
-        <button id="cancel-edit-btn" type="button" class="btn-text" style="padding:0;">Cancel</button>
-      </div>
-
-      <div class="date-row">
-        <div class="date-field">
-          <label for="start-date">Start date</label>
-          <input type="date" id="start-date">
-        </div>
-        <div class="date-field">
-          <label for="end-date">End date</label>
-          <input type="date" id="end-date">
-        </div>
-      </div>
-
-      <div class="color-select">
-        <div class="field-label">Colour</div>
-        <div class="swatches" id="swatches"></div>
-      </div>
-
-      <div id="form-error" class="form-error"></div>
-
-      <button id="save-dates-btn" type="button" class="btn btn-primary" style="width:100%;" disabled>Save dates</button>
-    </div>
-
-    <!-- Calendar -->
+    <!-- Calendar — tap a day to start a range, tap another to finish it -->
     <div class="card">
       <div class="calendar-header">
         <button id="cal-prev" class="nav-btn" aria-label="Previous month" type="button">‹</button>
@@ -105,12 +75,13 @@
         <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
       </div>
       <div class="day-grid" id="day-grid"></div>
+      <p class="calendar-hint">Tap a day to start logging a period, then tap another day to set the end.</p>
     </div>
 
     <!-- History -->
     <div class="card">
       <div class="section-title">History</div>
-      <div id="history-empty" class="history-empty">No periods logged yet. Once you add your dates, they'll show up here.</div>
+      <div id="history-empty" class="history-empty">No periods logged yet. Tap a day above to add your first one.</div>
       <div class="history-list" id="history-list"></div>
     </div>
 
@@ -120,6 +91,21 @@
     </p>
   </section>
 
+</div>
+
+<!-- Confirm bar — appears once a start day is tapped on the calendar -->
+<div id="confirm-bar" class="confirm-bar hidden">
+  <div class="confirm-bar-row">
+    <div class="confirm-bar-info">
+      <div class="confirm-bar-label" id="confirm-bar-label"></div>
+      <div class="confirm-bar-error" id="confirm-bar-error"></div>
+    </div>
+    <div class="confirm-bar-swatches" id="confirm-bar-swatches"></div>
+  </div>
+  <div class="confirm-bar-actions">
+    <button id="confirm-cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+    <button id="confirm-save-btn" type="button" class="btn btn-primary" disabled>Save dates</button>
+  </div>
 </div>
 
 <!-- Modal -->

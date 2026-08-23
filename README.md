@@ -11,8 +11,7 @@ a server, or anyone to maintain it.
 ## What it does
 
 - One-time setup: type a name, tap Continue. That's the entire "account."
-- Add a start and end date for a period; it's saved right on the phone or
-  computer, never sent anywhere.
+- Tap a day on the calendar to log a period, tap a colour to change how it's shown — everything else stays the same.
 - A simple calendar shows logged periods in one pastel colour you choose.
 - History shows the last 3 months.
 - Once two periods are logged, it estimates the next one and can show a
@@ -55,17 +54,16 @@ Go through each row. Every "Expected result" should match what you see.
 | Open the app for the first time | Only a name field and "Continue" — nothing else |
 | Type a name, tap Continue | Home screen appears, greeting shows your name |
 | Close the tab and reopen the link | Your name is remembered, no sign-in asked |
-| Pick a start date and the same date as end date (today) | A prompt appears asking you to come back later, with "I'll add it later" / "Save for now" |
+| Tap today's day on the calendar, then tap it again | A bar slides up from the bottom; a prompt then appears asking you to come back later, with "I'll add it later" / "Save for now" |
 | Tap "Save for now" | A one-day entry appears on today in the calendar and in History |
-| Tap that entry in History | Start/End fields fill in with today's date, ready to edit |
-| Change the End date to a later date and save | The entry updates to the new range |
-| Try to pick a date more than 3 months ago | The date picker won't let you select it |
-| Pick an End date before the Start date | An error message appears, nothing saves |
-| Save a second period with a Start date in the same month as one you already saved | A prompt asks "Update this month's dates?" |
+| Tap that day (or its History entry) | The bottom bar reopens with those dates, ready to edit |
+| Tap a new end day further out and tap "Update dates" | The entry updates to the new range |
+| Try to navigate the calendar past 3 months back, or past the current month | The ‹ or › arrow is greyed out and won't move further |
+| Tap an end day before the start day | The selection restarts from that day instead (can't produce an invalid range) |
+| Start a second period with a start day in the same month as one you already saved | A prompt asks "Update this month's dates?" |
 | Choose "Save latest" | The old dates in that month are replaced; History shows only the new ones |
 | Choose "Keep existing" (on a second try) | Nothing changes |
-| Change the colour swatch | Every period on the calendar and in History changes colour immediately |
-| Use the ‹ › arrows on the calendar | The month changes correctly, including across year boundaries |
+| Change the colour swatch in the bottom bar | Every period on the calendar and in History changes colour immediately |
 | Turn off Wi-Fi/data and reopen the app | It still opens and shows your saved data |
 | Log only one period | No reminder banner appears |
 | Log two periods a few weeks apart | A "Want a nudge…" banner appears; tapping "Turn on" asks for notification permission |

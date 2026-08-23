@@ -18,7 +18,7 @@ const state = {
   periods: [],
   calendarMonthKey: DateUtil.monthKey(DateUtil.todayStr()),
   editingPeriodId: null,
-  pendingModal: null // 'endDatePrompt' | 'monthConflict' | 'deleteConfirm'
+  selection: { start: null, end: null }
 };
 
 const el = (id) => document.getElementById(id);
@@ -58,14 +58,12 @@ function wireStaticEvents() {
     showHome();
   });
 
-  el('start-date').addEventListener('change', onStartDateChange);
-  el('end-date').addEventListener('change', onEndDateChange);
-  el('save-dates-btn').addEventListener('click', attemptSave);
-  el('cancel-edit-btn').addEventListener('click', resetForm);
   el('cal-prev').addEventListener('click', () => shiftCalendar(-1));
   el('cal-next').addEventListener('click', () => shiftCalendar(1));
   el('reminder-enable-btn').addEventListener('click', onEnableReminders);
   el('reminder-dismiss-btn').addEventListener('click', onDismissReminderPrompt);
+  el('confirm-cancel-btn').addEventListener('click', clearSelection);
+  el('confirm-save-btn').addEventListener('click', attemptSaveFromSelection);
 
   document.addEventListener('click', (e) => {
     if (e.target.matches('[data-close-modal]')) closeModal();
@@ -77,16 +75,15 @@ async function showHome() {
   el('onboarding-screen').classList.add('hidden');
   el('home-screen').classList.remove('hidden');
   el('greeting').textContent = `Hi, ${state.profile.name}`;
-  renderSwatches();
-  resetForm();
+  clearSelection();
   renderCalendar();
   renderHistory();
   await renderReminderBanner();
   Reminders.maybeNotify(state.periods);
 }
 
-function renderSwatches() {
-  const wrap = el('swatches');
+function renderSwatchesInto(containerId, onSelect) {
+  const wrap = el(containerId);
   wrap.innerHTML = '';
   PALETTE.forEach(({ name, hex }) => {
     const btn = document.createElement('button');
@@ -95,7 +92,7 @@ function renderSwatches() {
     btn.style.background = hex;
     btn.setAttribute('aria-label', name);
     btn.setAttribute('aria-pressed', String(state.profile.color === hex));
-    btn.addEventListener('click', () => selectColor(hex));
+    btn.addEventListener('click', () => onSelect(hex));
     wrap.appendChild(btn);
   });
 }
@@ -103,68 +100,148 @@ function renderSwatches() {
 async function selectColor(hex) {
   state.profile = await TrackitDB.saveProfile({ ...state.profile, color: hex });
   document.documentElement.style.setProperty('--period-color', hex);
-  renderSwatches();
   renderCalendar();
   renderHistory();
+  renderConfirmBar();
 }
 
-// ---------- Date entry form ----------
-function setDateInputBounds() {
-  const min = DateUtil.minSelectableDate();
-  const max = DateUtil.maxSelectableDate();
-  el('start-date').min = min;
-  el('start-date').max = max;
-  el('end-date').min = el('start-date').value || min;
-  el('end-date').max = max;
-}
-
-function resetForm() {
+// ---------- Calendar-driven date selection ----------
+function clearSelection() {
   state.editingPeriodId = null;
-  el('start-date').value = '';
-  el('end-date').value = '';
-  setDateInputBounds();
-  el('form-error').textContent = '';
-  el('editing-banner').classList.add('hidden');
-  el('save-dates-btn').textContent = 'Save dates';
-  updateSaveButtonState();
+  state.selection = { start: null, end: null };
+  renderConfirmBar();
 }
 
-function onStartDateChange() {
-  setDateInputBounds();
-  if (el('end-date').value && el('end-date').value < el('start-date').value) {
-    el('end-date').value = '';
-  }
-  updateSaveButtonState();
-}
-
-function onEndDateChange() {
-  updateSaveButtonState();
-}
-
-function updateSaveButtonState() {
-  const ok = !!el('start-date').value && !!el('end-date').value;
-  el('save-dates-btn').disabled = !ok;
-  el('form-error').textContent = '';
-}
-
-function setEditingPeriod(period) {
+function openSelectionForEdit(period) {
   state.editingPeriodId = period.id;
-  el('start-date').value = period.start;
-  el('end-date').value = period.end;
-  setDateInputBounds();
-  el('editing-banner').classList.remove('hidden');
-  el('editing-banner-text').textContent = `Editing period from ${DateUtil.monthLabel(period.monthKey)}`;
-  el('save-dates-btn').textContent = 'Update dates';
-  updateSaveButtonState();
+  state.selection = { start: period.start, end: period.end };
   state.calendarMonthKey = period.monthKey;
   renderCalendar();
+  renderConfirmBar();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function attemptSave() {
-  const start = el('start-date').value;
-  const end = el('end-date').value;
-  const errorEl = el('form-error');
+function renderConfirmBar() {
+  const bar = el('confirm-bar');
+  const { start, end } = state.selection;
+
+  if (!start) {
+    bar.classList.add('hidden');
+    return;
+  }
+  bar.classList.remove('hidden');
+
+  const label = el('confirm-bar-label');
+  label.textContent = end
+    ? DateUtil.rangeLabel(start, end)
+    : `${DateUtil.shortDateLabel(start)} — tap an end day`;
+
+  el('confirm-bar-error').textContent = '';
+  el('confirm-save-btn').disabled = !end;
+  el('confirm-save-btn').textContent = state.editingPeriodId ? 'Update dates' : 'Save dates';
+
+  renderSwatchesInto('confirm-bar-swatches', selectColor);
+}
+
+// ---------- Calendar ----------
+function shiftCalendar(delta) {
+  const next = DateUtil.addMonthsToKey(state.calendarMonthKey, delta);
+  const minMonth = DateUtil.monthKey(DateUtil.minSelectableDate());
+  const maxMonth = DateUtil.monthKey(DateUtil.maxSelectableDate());
+  if (next < minMonth || next > maxMonth) return;
+  state.calendarMonthKey = next;
+  renderCalendar();
+}
+
+function periodsForDate(dateStr) {
+  return state.periods.filter(p => dateStr >= p.start && dateStr <= p.end);
+}
+
+function renderCalendar() {
+  el('cal-month-label').textContent = DateUtil.monthLabel(state.calendarMonthKey);
+  const minMonth = DateUtil.monthKey(DateUtil.minSelectableDate());
+  const maxMonth = DateUtil.monthKey(DateUtil.maxSelectableDate());
+  el('cal-prev').disabled = state.calendarMonthKey <= minMonth;
+  el('cal-next').disabled = state.calendarMonthKey >= maxMonth;
+
+  const grid = el('day-grid');
+  grid.innerHTML = '';
+  const today = DateUtil.todayStr();
+  const days = DateUtil.buildMonthGrid(state.calendarMonthKey);
+  const { start: selStart, end: selEnd } = state.selection;
+
+  days.forEach(({ dateStr, dayNum, outside }) => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'day-cell';
+    const inRangeAllowed = DateUtil.isWithinSelectableRange(dateStr);
+
+    if (outside) cell.classList.add('outside');
+    if (dateStr === today) cell.classList.add('today');
+    if (!outside && periodsForDate(dateStr).length) cell.classList.add('logged');
+    if (!outside && !inRangeAllowed) cell.classList.add('unselectable');
+
+    if (!outside) {
+      if (dateStr === selStart) cell.classList.add('range-start');
+      if (dateStr === selEnd) cell.classList.add('range-end');
+      if (selStart && selEnd && dateStr > selStart && dateStr < selEnd) cell.classList.add('in-range');
+    }
+
+    cell.setAttribute('aria-label', dateStr);
+
+    const num = document.createElement('span');
+    num.className = 'num';
+    num.textContent = dayNum;
+    cell.appendChild(num);
+    cell.addEventListener('click', () => onDayClick(dateStr, outside, inRangeAllowed));
+    grid.appendChild(cell);
+  });
+}
+
+// Tapping the calendar drives selection; the confirm bar reflects it live.
+function onDayClick(dateStr, outside, inRangeAllowed) {
+  if (outside) {
+    const targetMonth = DateUtil.monthKey(dateStr);
+    const minMonth = DateUtil.monthKey(DateUtil.minSelectableDate());
+    const maxMonth = DateUtil.monthKey(DateUtil.maxSelectableDate());
+    if (targetMonth >= minMonth && targetMonth <= maxMonth) {
+      state.calendarMonthKey = targetMonth;
+      renderCalendar();
+    }
+    return;
+  }
+
+  if (!inRangeAllowed) return;
+
+  const sel = state.selection;
+
+  // Nothing selected yet and this day already has a saved period — open it for editing.
+  if (!sel.start) {
+    const existing = periodsForDate(dateStr)[0];
+    if (existing) {
+      openSelectionForEdit(existing);
+      return;
+    }
+  }
+
+  if (!sel.start || (sel.start && sel.end)) {
+    state.editingPeriodId = null;
+    sel.start = dateStr;
+    sel.end = null;
+  } else if (dateStr >= sel.start) {
+    sel.end = dateStr;
+  } else {
+    sel.start = dateStr;
+    sel.end = null;
+  }
+
+  renderCalendar();
+  renderConfirmBar();
+}
+
+async function attemptSaveFromSelection() {
+  const { start, end } = state.selection;
+  const errorEl = el('confirm-bar-error');
   errorEl.textContent = '';
 
   if (!start || !end) return;
@@ -228,82 +305,11 @@ async function finalizeSave(start, end, monthKey, replaceId) {
 
   await loadPeriods();
   state.calendarMonthKey = monthKey;
-  resetForm();
+  clearSelection();
   renderCalendar();
   renderHistory();
   await renderReminderBanner();
   showToast('Saved');
-}
-
-// ---------- Calendar ----------
-function shiftCalendar(delta) {
-  state.calendarMonthKey = DateUtil.addMonthsToKey(state.calendarMonthKey, delta);
-  renderCalendar();
-}
-
-function periodsForDate(dateStr) {
-  return state.periods.filter(p => dateStr >= p.start && dateStr <= p.end);
-}
-
-function renderCalendar() {
-  el('cal-month-label').textContent = DateUtil.monthLabel(state.calendarMonthKey);
-  const grid = el('day-grid');
-  grid.innerHTML = '';
-  const today = DateUtil.todayStr();
-  const days = DateUtil.buildMonthGrid(state.calendarMonthKey);
-
-  days.forEach(({ dateStr, dayNum, outside }) => {
-    const cell = document.createElement('button');
-    cell.type = 'button';
-    cell.className = 'day-cell';
-    if (outside) cell.classList.add('outside');
-    if (dateStr === today) cell.classList.add('today');
-    if (!outside && periodsForDate(dateStr).length) cell.classList.add('logged');
-    cell.setAttribute('aria-label', dateStr);
-
-    const num = document.createElement('span');
-    num.className = 'num';
-    num.textContent = dayNum;
-    cell.appendChild(num);
-    cell.addEventListener('click', () => onDayClick(dateStr, outside));
-    grid.appendChild(cell);
-  });
-}
-
-// Tapping the calendar feeds the "Add your dates" form above it.
-function onDayClick(dateStr, outside) {
-  if (outside) {
-    state.calendarMonthKey = DateUtil.monthKey(dateStr);
-    renderCalendar();
-    return;
-  }
-
-  const existing = periodsForDate(dateStr)[0];
-  if (existing) {
-    setEditingPeriod(existing);
-    return;
-  }
-
-  const startVal = el('start-date').value;
-  const endVal = el('end-date').value;
-
-  if (!startVal || endVal) {
-    // Nothing picked yet, or a full pair is already picked — start fresh.
-    state.editingPeriodId = null;
-    el('editing-banner').classList.add('hidden');
-    el('save-dates-btn').textContent = 'Save dates';
-    el('start-date').value = dateStr;
-    el('end-date').value = '';
-  } else if (dateStr >= startVal) {
-    el('end-date').value = dateStr;
-  } else {
-    el('start-date').value = dateStr;
-    el('end-date').value = '';
-  }
-
-  setDateInputBounds();
-  updateSaveButtonState();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ---------- History ----------
@@ -358,7 +364,7 @@ function renderHistory() {
 
     main.appendChild(dot);
     main.appendChild(info);
-    main.addEventListener('click', () => setEditingPeriod(p));
+    main.addEventListener('click', () => openSelectionForEdit(p));
 
     const del = document.createElement('button');
     del.type = 'button';
@@ -383,7 +389,7 @@ function confirmDelete(period) {
       { label: 'Delete', style: 'btn-primary', onClick: async () => {
           closeModal();
           await TrackitDB.deletePeriod(period.id);
-          if (state.editingPeriodId === period.id) resetForm();
+          if (state.editingPeriodId === period.id) clearSelection();
           await loadPeriods();
           renderCalendar();
           renderHistory();
