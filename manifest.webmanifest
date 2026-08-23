@@ -1,9 +1,0 @@
-{
-  "name": "Track it",
-  "short_name": "Track it",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#fff9fb",
-  "theme_color": "#fff9fb",
-  "description": "A simple private period date tracker."
-}
