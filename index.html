@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Track it</title>
+<meta name="description" content="A private, minimal period-date tracker. No account, no cloud, no ads.">
+<meta name="theme-color" content="#FBF8F6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Track it">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== Onboarding ===== -->
+  <section id="onboarding-screen" class="onboarding hidden">
+    <div class="onboarding-hero">
+      <div class="pebble-cluster" aria-hidden="true">
+        <span style="background:#F5C6D6"></span>
+        <span style="background:#BFDCEB"></span>
+        <span style="background:#C9E4C5"></span>
+      </div>
+      <h1>track it</h1>
+      <p class="tagline">Log it. See it. Get reminded. Nothing else. Your data stays only on this device.</p>
+    </div>
+
+    <form id="onboarding-form">
+      <div>
+        <div class="field-label">What should we call you?</div>
+        <input type="text" id="onboarding-name" name="name" maxlength="40" autocomplete="off" placeholder="Your name" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Continue</button>
+    </form>
+    <p class="onboarding-note">No account, email, or phone number needed. Nothing leaves this device.</p>
+  </section>
+
+  <!-- ===== Home ===== -->
+  <section id="home-screen" class="hidden">
+    <div class="topbar">
+      <span class="wordmark">track it</span>
+      <span class="privacy-pill">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V8a6 6 0 1112 0v2M5 10h14a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1v-9a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6"/></svg>
+        On this device
+      </span>
+    </div>
+
+    <h1 class="greeting" id="greeting">Hi</h1>
+
+    <div id="reminder-prompt-banner" class="reminder-banner hidden">
+      <span class="icon">🔔</span>
+      <span>Want a nudge when your period may be due?</span>
+      <button id="reminder-enable-btn" class="btn btn-primary" style="padding:8px 12px;font-size:13px;">Turn on</button>
+      <button id="reminder-dismiss-btn" class="btn-text" style="padding:8px 4px;font-size:13px;">Not now</button>
+    </div>
+
+    <div id="reminder-banner" class="reminder-banner hidden">
+      <span class="icon">🔔</span>
+      <span id="reminder-banner-text"></span>
+    </div>
+
+    <!-- Add your dates -->
+    <div class="card">
+      <div class="section-title">Add your dates</div>
+
+      <div id="editing-banner" class="editing-banner hidden">
+        <span id="editing-banner-text"></span>
+        <button id="cancel-edit-btn" type="button" class="btn-text" style="padding:0;">Cancel</button>
+      </div>
+
+      <div class="date-row">
+        <div class="date-field">
+          <label for="start-date">Start date</label>
+          <input type="date" id="start-date">
+        </div>
+        <div class="date-field">
+          <label for="end-date">End date</label>
+          <input type="date" id="end-date">
+        </div>
+      </div>
+
+      <div class="color-select">
+        <div class="field-label">Colour</div>
+        <div class="swatches" id="swatches"></div>
+      </div>
+
+      <div id="form-error" class="form-error"></div>
+
+      <button id="save-dates-btn" type="button" class="btn btn-primary" style="width:100%;" disabled>Save dates</button>
+    </div>
+
+    <!-- Calendar -->
+    <div class="card">
+      <div class="calendar-header">
+        <button id="cal-prev" class="nav-btn" aria-label="Previous month" type="button">‹</button>
+        <span class="month-label" id="cal-month-label"></span>
+        <button id="cal-next" class="nav-btn" aria-label="Next month" type="button">›</button>
+      </div>
+      <div class="weekday-row">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+      <div class="day-grid" id="day-grid"></div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="section-title">History</div>
+      <div id="history-empty" class="history-empty">No periods logged yet. Once you add your dates, they'll show up here.</div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+    <p class="footer-note">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V8a6 6 0 1112 0v2M5 10h14a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1v-9a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6"/></svg>
+      Your data is stored only on this device.
+    </p>
+  </section>
+
+</div>
+
+<!-- Modal -->
+<div id="modal-backdrop" class="modal-backdrop hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title"></h2>
+    <p id="modal-body"></p>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/db.js"></script>
+<script src="js/dates.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
